@@ -2,7 +2,6 @@
 import uvicorn ##ASGI
 from json.tool import main
 from fastapi import FastAPI
-import pandas as pd
 from pydantic import BaseModel, create_model
 import joblib
 import numpy as np
@@ -137,7 +136,7 @@ def index():
     return {"message": "Hello Guilhem"}  
 
 # 5. Route with a single parameter, returns the parameter within a message located at /Scoring
-@app.get("/scoring")
+@app.post("/scoring")
 async def predict_scoring(model: ScoringModel):
     item_dict = model.dict()
 
