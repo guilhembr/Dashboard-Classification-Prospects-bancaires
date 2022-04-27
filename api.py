@@ -136,26 +136,29 @@ def index():
     return {"message": "Hello Guilhem"}  
 
 # 5. Route with a single parameter, returns the parameter within a message located at /Scoring
-@app.post("/scoring")
-async def predict_scoring(model: ScoringModel):
-    item_dict = model.dict()
+# @app.post("/scoring")
+# async def predict_scoring(model: ScoringModel):
+#     item_dict = model.dict()
 
-    df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
-    df = df.astype(object)
+#     df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
+#     df = df.astype(object)
 
-    cat_array = df[list_cat_features]
-    cat_array = ohe.transform(cat_array).todense()
+#     cat_array = df[list_cat_features]
+#     cat_array = ohe.transform(cat_array).todense()
 
-    num_array = df[list_num_features].to_numpy()
-    num_array = scaler.transform(num_array)
+#     num_array = df[list_num_features].to_numpy()
+#     num_array = scaler.transform(num_array)
 
-    X = np.concatenate[cat_array, num_array]
-    X = np.asarray(X)
+#     X = np.concatenate[cat_array, num_array]
+#     X = np.asarray(X)
 
-    return json.dumps(model.predict_proba(X).tolist())
+#     return json.dumps(model.predict_proba(X).tolist())
 
 # 6. Run the API with uvicorn
 #uvicorn api:app --reload  
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1")
+    
+#7 requirements.txt
+#pip list --format=freeze > requirements.txt
