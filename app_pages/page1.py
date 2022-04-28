@@ -10,7 +10,7 @@ from matplotlib.image import imread
 
 def app():
 
-    logo = imread("/Users/guilhemberthou/dev/P7_Scoring/app_pages/logo.png")
+    logo = imread("./app_pages/logo.png")
 
     st.sidebar.image(logo)
     st.sidebar.write("")
@@ -18,7 +18,7 @@ def app():
     
     st.title("Aperçu de la population de prospect")
         
-    df = pd.read_csv("/Users/guilhemberthou/dev/P7_Scoring/dashboard_data/df_test.csv")
+    df = pd.read_csv("./dashboard_data/df_test.csv")
     
     #Sample data for Customer profile Analysis    
     colonnes_pandas_profiling = ["CODE_GENDER",

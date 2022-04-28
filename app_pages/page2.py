@@ -54,8 +54,8 @@ def app():
     #Chargement des données nécessaires au dashboard
     st.title("Comparaison clientèle")
         
-    df = pd.read_csv("/Users/guilhemberthou/dev/P7_Scoring/dashboard_data/df_test.csv")
-    logo = imread("/Users/guilhemberthou/dev/P7_Scoring/app_pages/logo.png")
+    df = pd.read_csv("./dashboard_data/df_test.csv")
+    logo = imread("./app_pages/logo.png")
 
     st.sidebar.image(logo)
     st.sidebar.write("")
