@@ -1,0 +1,3 @@
+#!/Users/guilhemberthou/dev/P7_Scoring/myenv3/bin/python3
+from numba.pycc import main
+main()

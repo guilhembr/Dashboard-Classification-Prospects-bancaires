@@ -1,4 +1,4 @@
-# 1. import modules
+#import modules
 import uvicorn ##ASGI
 from json.tool import main
 from fastapi import FastAPI
@@ -7,24 +7,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-# 2. create fast API instance
-app = FastAPI()
-
-# 3. load data
-data_dict = joblib.load("./bin/data_dict.joblib")
-ohe = joblib.load("./bin/ohe.joblib")
-imp_mean = joblib.load("./bin/imp_mean.joblib")
-scaler = joblib.load("./bin/scaler.joblib")
-model = joblib.load("./bin/model.joblib")
-
-ScoringModel = create_model(
-    "ScoringModel",
-    **data_dict,
-    __base__=BaseModel,
-)
-
-ScoringModel.update_forward_refs()
-
+#load data
+df_test = pd.read_csv("./dashboard_data/df_test.csv")
 list_cat_features = ["NAME_CONTRACT_TYPE",
     "CODE_GENDER",
     "FLAG_OWN_CAR",
@@ -78,7 +62,6 @@ list_cat_features = ["NAME_CONTRACT_TYPE",
     "FLAG_DOCUMENT_20",
     "FLAG_DOCUMENT_21"
 ]
-
 list_num_features = [
     "CNT_CHILDREN",
     "AMT_INCOME_TOTAL",
@@ -129,38 +112,37 @@ list_num_features = [
     "credit_goods_price_ratio",
     "credit_downpayment"
 ]
+df = df_test[[c for c in df_test.columns if c in list_cat_features or list_num_features]]
 
-#data pre-processing
+data_dict = joblib.load("./bin/data_dict.joblib")
+ohe = joblib.load("./bin/ohe.joblib")
+imp_mean = joblib.load("./bin/imp_mean.joblib")
+scaler = joblib.load("./bin/scaler.joblib")
+model = joblib.load("./bin/model.joblib")
 
-@app.get("/")
-def index():
-    return {"message": "Hello Guilhem"}  
+#create Model
+ScoringModel = create_model(
+    "ScoringModel",
+    **data_dict,
+    __base__=BaseModel,
+)
 
-# 5. Route with a single parameter, returns the parameter within a message located at /Scoring
-@app.post("/scoring")
-async def predict_scoring(item: ScoringModel):
-    item_dict = item.dict()
+ScoringModel.update_forward_refs()
 
-    df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
-    df = df.astype(object)
-    cat_array = ohe.transform(df[list_cat_features]).todense()
+item_dict = ScoringModel.dict()
 
-    num_array = df[list_num_features].to_numpy()
-    num_array = imp_mean.transform(num_array)
-    num_array = scaler.transform(num_array)
+df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
+df = df.astype(object)
 
-    X = np.concatenate[cat_array, num_array]
-    X = np.asarray(X)
+print(df.shape)
 
-    return json.dumps(model.predict_proba(X).tolist())
+# cat_array = df[list_cat_features]
+# cat_array = ohe.transform(cat_array).todense()
 
-# 6. Run the API with uvicorn
-#uvicorn api:app --reload  
+# num_array = df[list_num_features].to_numpy()
+# num_array = scaler.transform(num_array)
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1")
-    
-#7 requirements.txt
-#pip list --format=freeze > requirements.txt
+# X = np.concatenate[cat_array, num_array]
+# X = np.asarray(X)
 
-#kill processes on port : kill -9 $(lsof -t -i:"8000")
+# print(json.dumps(ScoringModel.predict_proba(X).tolist()))
