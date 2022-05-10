@@ -1,30 +1,20 @@
-# 1. import modules
 import uvicorn ##ASGI
-from json.tool import main
 from fastapi import FastAPI
+import json
 from pydantic import BaseModel, create_model
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.base import TransformerMixin
 
-# 2. create fast API instance
-app = FastAPI()
+#######################################################################
+# Loading data and model
 
-# 3. load data
-data_dict = joblib.load("./bin/data_dict.joblib")
-ohe = joblib.load("./bin/ohe.joblib")
-imp_mean = joblib.load("./bin/imp_mean.joblib")
-scaler = joblib.load("./bin/scaler.joblib")
-model = joblib.load("./bin/model.joblib")
+#---------------------------------------------------------------------
+#loading data
+df_test = pd.read_csv("./dashboard_data/df_test.csv").astype(object)
 
-ScoringModel = create_model(
-    "ScoringModel",
-    **data_dict,
-    __base__=BaseModel,
-)
-
-ScoringModel.update_forward_refs()
-
+#define list of cat and num features
 list_cat_features = ["NAME_CONTRACT_TYPE",
     "CODE_GENDER",
     "FLAG_OWN_CAR",
@@ -78,7 +68,6 @@ list_cat_features = ["NAME_CONTRACT_TYPE",
     "FLAG_DOCUMENT_20",
     "FLAG_DOCUMENT_21"
 ]
-
 list_num_features = [
     "CNT_CHILDREN",
     "AMT_INCOME_TOTAL",
@@ -122,7 +111,6 @@ list_num_features = [
     "AMT_REQ_CREDIT_BUREAU_MON",
     "AMT_REQ_CREDIT_BUREAU_QRT",
     "AMT_REQ_CREDIT_BUREAU_YEAR",
-    "DAYS_EMPLOYED_ANOM",
     "AGE_INT",
     "annuity_income_ratio",
     "credit_annuity_ratio",
@@ -130,37 +118,79 @@ list_num_features = [
     "credit_downpayment"
 ]
 
+#load serialized objects
+data_dict = joblib.load("./bin/data_dict.joblib")
+ohe = joblib.load("./bin/ohe.joblib")
+categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
+simple_imputer = joblib.load("./bin/simple_imputer.joblib")
+scaler = joblib.load("./bin/scaler.joblib")
+model = joblib.load("./bin/model.joblib")
+
+#---------------------------------------------------------------------
 #data pre-processing
+
+#keep id into a separate serie
+user_id = df_test[['SK_ID_CURR']]
+
+#SimpleImputing (most frequent) and ohe of categorical features
+cat_array = categorical_imputer.transform(df_test[list_cat_features])
+cat_array = ohe.transform(cat_array).todense()
+
+#SimpleImputing (median) and StandardScaling of numerical features
+num_array = simple_imputer.transform(df_test[list_num_features])
+num_array = scaler.transform(num_array)
+
+#concatenate
+X = np.concatenate([cat_array, num_array], axis=1)
+X = np.asarray(X)
+
+#---------------------------------------------------------------------
+#shap values
+
+
+#######################################################################
+#create fast API instance
+app = FastAPI()
+
+#create model
+ScoringModel = create_model(
+    "ScoringModel",
+    **data_dict,
+    __base__=BaseModel,
+)
+
+ScoringModel.update_forward_refs()
 
 @app.get("/")
 def index():
-    return {"message": "Hello Guilhem"}  
+    return {"message": "API loaded"}  
 
-# 5. Route with a single parameter, returns the parameter within a message located at /Scoring
+#Route with a single parameter, returns the parameter within a message located at /Scoring
 @app.post("/scoring")
 async def predict_scoring(item: ScoringModel):
     item_dict = item.dict()
 
     df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
     df = df.astype(object)
-    cat_array = ohe.transform(df[list_cat_features]).todense()
+    
+    cat_array = categorical_imputer.transform(df[list_cat_features])
+    cat_array = ohe.transform(cat_array).todense()
 
-    num_array = df[list_num_features].to_numpy()
-    num_array = imp_mean.transform(num_array)
+    num_array = simple_imputer.transform(df[list_num_features])
     num_array = scaler.transform(num_array)
 
-    X = np.concatenate[cat_array, num_array]
+    X = np.concatenate([cat_array, num_array], axis=1)
     X = np.asarray(X)
 
     return json.dumps(model.predict_proba(X).tolist())
 
-# 6. Run the API with uvicorn
+#Run the API with uvicorn
 #uvicorn api:app --reload  
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1")
     
-#7 requirements.txt
+#requirements.txt
 #pip list --format=freeze > requirements.txt
 
 #kill processes on port : kill -9 $(lsof -t -i:"8000")

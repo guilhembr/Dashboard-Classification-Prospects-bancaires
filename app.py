@@ -5,7 +5,7 @@ from app_pages import page1, page2, page3 # import your app modules here
 app = MultiApp()
 
 st.markdown("""
-# Calculer le scoring bancaire d"un prospect
+# Calculer le scoring bancaire d'un prospect
 Cette application utilise le [streamlit-multiapps](https://github.com/upraneelnihar/streamlit-multiapps) framework développé par [Praneel Nihar](https://medium.com/@u.praneel.nihar).
 """)
 

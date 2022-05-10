@@ -1,7 +1,7 @@
 # P7_Scoring 
 
 ## Overview
-Dashboard Streamlit : 
+Dashboard Streamlit : https://share.streamlit.io/guilhembr/p7_scoring/main/app.py
 Prediction model deployed on Heroku : https://projetoc-scoring.herokuapp.com/
 ## Usage
 Predict banking scoring of non-labelled client information dataset. 
