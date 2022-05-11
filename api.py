@@ -1,5 +1,5 @@
 import uvicorn ##ASGI
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import json
 from pydantic import BaseModel, create_model
 import joblib
@@ -7,8 +7,9 @@ import numpy as np
 import pandas as pd
 from sklearn.base import TransformerMixin
 
+
 #######################################################################
-# Loading data and model
+# Loading data (to predict) and model
 
 #---------------------------------------------------------------------
 #loading data
@@ -129,9 +130,6 @@ model = joblib.load("./bin/model.joblib")
 #---------------------------------------------------------------------
 #data pre-processing
 
-#keep id into a separate serie
-user_id = df_test[['SK_ID_CURR']]
-
 #SimpleImputing (most frequent) and ohe of categorical features
 cat_array = categorical_imputer.transform(df_test[list_cat_features])
 cat_array = ohe.transform(cat_array).todense()
@@ -161,28 +159,83 @@ ScoringModel = create_model(
 
 ScoringModel.update_forward_refs()
 
-@app.get("/")
-def index():
-    return {"message": "API loaded"}  
+@app.get("/api/clients")
+async def clients_id():
+    """Endpoint to get all clients id
+
+    Returns:
+        list: clients_id
+    """
+    clients_id = df_test["SK_ID_CURR"].to_list()
+    
+    return {"clientsId": clients_id}  
+
+@app.get("/api/clients/{id}")
+async def client_details(id: int):
+    """Endpoint to get client's details
+
+    Args:
+        id (int): client id in the test set
+
+    Returns:
+        dict: client's details
+    """
+    clients_id = df_test["SK_ID_CURR"].to_list()
+    
+    if id not in clients_id:
+        raise HTTPException(status_code=404, detail="client's id not found")
+    else:
+        #filtering by client's id
+        idx = df_test[df_test["SK_ID_CURR"] == id].index[0]
+          
+        client = {
+            "clientId" : str(df_test.loc[idx,"SK_ID_CURR"]),
+            "sexe": str(df_test.loc[idx,"CODE_GENDER"]),
+            "statut familial": str(df_test.loc[idx,"NAME_FAMILY_STATUS"]),
+            "enfants": str(df_test.loc[idx,"CNT_CHILDREN"]),
+            "age": str(df_test.loc[idx,"AGE_INT"]),
+            "statut pro": str(df_test.loc[idx,"NAME_INCOME_TYPE"]),
+            "niveau d'études": str(df_test.loc[idx,"NAME_EDUCATION_TYPE"])
+        }
+        
+        return client
+
+@app.get("/api/clients/{id}/prediction")
+async def predict(id: int):
+    
+    clients_id = df_test["SK_ID_CURR"].to_list()
+    
+    if id not in clients_id:
+        raise HTTPException(status_code=404, detail="client's id not found")
+    else:
+       
+        #prediction
+        result_proba = model.predict_proba(X)
+        y_pred_proba = result_proba[:, 1]
+        # threshold = 0.48
+        # y_pred = y_pred_proba > threshold
+        # y_pred = y_pred.astype(float)
+        
+        df_test["pred"] = y_pred_proba
+        df_test["pred"] = round(df_test["pred"].astype(np.float64),3)
+        
+        #filtering by client's id
+        df_test_by_id = df_test[df_test["SK_ID_CURR"] == id]
+        
+        prediction_by_id = df_test_by_id.to_json()
+                
+        return prediction_by_id
+
 
 #Route with a single parameter, returns the parameter within a message located at /Scoring
-@app.post("/scoring")
-async def predict_scoring(item: ScoringModel):
-    item_dict = item.dict()
+# @app.post("/scoring")
+# async def predict_scoring(item: ScoringModel):
+#     item_dict = item.dict()
 
-    df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
-    df = df.astype(object)
-    
-    cat_array = categorical_imputer.transform(df[list_cat_features])
-    cat_array = ohe.transform(cat_array).todense()
+#     df = pd.DataFrame(data=[item_dict.values()], columns=item_dict.keys())
+#     df = df.astype(object)
 
-    num_array = simple_imputer.transform(df[list_num_features])
-    num_array = scaler.transform(num_array)
-
-    X = np.concatenate([cat_array, num_array], axis=1)
-    X = np.asarray(X)
-
-    return json.dumps(model.predict_proba(X).tolist())
+#     return json.dumps(model.predict_proba(X).tolist())
 
 #Run the API with uvicorn
 #uvicorn api:app --reload  

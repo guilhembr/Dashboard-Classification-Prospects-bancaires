@@ -7,21 +7,26 @@ import pandas_profiling
 from streamlit_pandas_profiling import st_profile_report
 from matplotlib.image import imread
 
+#######################################################################
+# Loading data (labelled)
+#---------------------------------------------------------------------
 
 def app():
-
+    """Fonction générant la page 1 du dashboard. Ne prend pas de paramètre en entrée.
+    """
     logo = imread("./app_pages/logo.png")
 
     st.sidebar.image(logo)
     st.sidebar.write("")
     st.sidebar.write("")
     
-    st.title("Aperçu de la population de prospect")
+    st.title("Aperçu de la population de prospect (labellisée)")
         
-    df = pd.read_csv("./dashboard_data/df_test.csv")
+    df = pd.read_csv("./dashboard_data/df_train.csv").astype("object")
     
     #Sample data for Customer profile Analysis    
-    colonnes_pandas_profiling = ["CODE_GENDER",
+    colonnes_pandas_profiling = [
+                             "CODE_GENDER",
                              "AGE_INT", 
                              "NAME_TYPE_SUITE",
                              "NAME_EDUCATION_TYPE",
@@ -37,7 +42,7 @@ def app():
 
     
     #Pandas Profiling Report
-    st.write("Analyse exploratoire d'un échantillon du dataset de prospect (seules 11 des 101 variables du dataset sont présentées afin de comprendre le profil des prospects)")
+    st.write("Analyse exploratoire d'un échantillon du dataset labellisé de prospect (seules 11 des 101 variables du dataset sont présentées afin de comprendre le profil des prospects)")
     pr = df_pandas_profiling.profile_report()
     st_profile_report(pr)
 
