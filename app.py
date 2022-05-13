@@ -1,6 +1,6 @@
 import streamlit as st
 from multiapp import MultiApp
-from app_pages import page1, page2, page3 # import your app modules here
+from app_pages import page1, page2 # import your app modules here
 
 app = MultiApp()
 
@@ -12,7 +12,6 @@ Cette application utilise le [streamlit-multiapps](https://github.com/upraneelni
 # Add all your application here
 app.add_app("Aperçu de la population", page1.app)
 app.add_app("Fiche Prospect", page2.app)
-app.add_app("Score Prospect", page3.app)
 
 # The main app
 app.run()
