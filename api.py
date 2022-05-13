@@ -10,8 +10,8 @@ from sklearn.base import TransformerMixin
 
 #######################################################################
 # Loading data (to predict) and model
-
 #---------------------------------------------------------------------
+
 #loading data
 df_test = pd.read_csv("./dashboard_data/df_test.csv").astype(object)
 
@@ -226,8 +226,19 @@ async def predict(id: int):
                 
         return prediction_by_id
 
+#Run the API with uvicorn
+#uvicorn api:app --reload  
 
-#Route with a single parameter, returns the parameter within a message located at /Scoring
+# if __name__ == "__main__":
+#     uvicorn.run(app, host="127.0.0.1")
+    
+#requirements.txt
+#pip list --format=freeze > requirements.txt
+
+#kill processes on port : kill -9 $(lsof -t -i:"8000")
+
+
+# #Route with a single parameter, returns the parameter within a message located at /Scoring
 # @app.post("/scoring")
 # async def predict_scoring(item: ScoringModel):
 #     item_dict = item.dict()
@@ -236,14 +247,3 @@ async def predict(id: int):
 #     df = df.astype(object)
 
 #     return json.dumps(model.predict_proba(X).tolist())
-
-#Run the API with uvicorn
-#uvicorn api:app --reload  
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1")
-    
-#requirements.txt
-#pip list --format=freeze > requirements.txt
-
-#kill processes on port : kill -9 $(lsof -t -i:"8000")
