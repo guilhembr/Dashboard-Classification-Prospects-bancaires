@@ -33,7 +33,7 @@ session = requests.Session()
 
 def client():
 	#Getting Client details
-	response = fetch(session, f"http://127.0.0.1:8000/api/clients")
+	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients")
 	if response:
 		return response["clientsId"]
 	else:
@@ -41,14 +41,14 @@ def client():
 	
 def client_details(id):
 	#Getting Client details
-	response = fetch(session,f"http://127.0.0.1:8000/api/clients/{id}")
+	response = fetch(session,f"http://projetoc-scoring.herokuapp.com/api/clients/{id}")
 	if response:
 		return response
 	else:
 		return "Error"
 	
 def client_prediction(id):
-	response = fetch(session, f"http://127.0.0.1:8000/api/clients/{id}/prediction")
+	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients/{id}/prediction")
 	if response:
 		return response
 	else:
