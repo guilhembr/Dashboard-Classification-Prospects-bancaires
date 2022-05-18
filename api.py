@@ -1,7 +1,7 @@
 import uvicorn ##ASGI
 from fastapi import FastAPI, HTTPException
 import json
-from pydantic import BaseModel, create_model
+# from pydantic import BaseModel, create_model
 import joblib
 import numpy as np
 import pandas as pd
@@ -14,112 +14,7 @@ import shap
 #---------------------------------------------------------------------
 
 #loading data
-df_train = pd.read_csv("./dashboard_data/df_train.csv")
 df_test = pd.read_csv("./dashboard_data/df_test.csv")
-
-#define list of cat and num features
-list_cat_features = ["NAME_CONTRACT_TYPE",
-    "CODE_GENDER",
-    "FLAG_OWN_CAR",
-    "FLAG_OWN_REALTY",
-    "NAME_TYPE_SUITE",
-    "NAME_INCOME_TYPE",
-    "NAME_EDUCATION_TYPE",
-    "NAME_FAMILY_STATUS",
-    "NAME_HOUSING_TYPE",
-    "FLAG_MOBIL",
-    "FLAG_EMP_PHONE",
-    "FLAG_WORK_PHONE",
-    "FLAG_CONT_MOBILE",
-    "FLAG_PHONE",
-    "FLAG_EMAIL",
-    "OCCUPATION_TYPE",
-    "WEEKDAY_APPR_PROCESS_START",
-    "REG_REGION_NOT_LIVE_REGION",
-    "REG_REGION_NOT_WORK_REGION",
-    "LIVE_REGION_NOT_WORK_REGION",
-    "REG_CITY_NOT_LIVE_CITY",
-    "REG_CITY_NOT_WORK_CITY",
-    "LIVE_CITY_NOT_WORK_CITY",
-    "ORGANIZATION_TYPE",
-    "FONDKAPREMONT_MODE",
-    "HOUSETYPE_MODE",
-    "WALLSMATERIAL_MODE",
-    "EMERGENCYSTATE_MODE",
-    "FLAG_DOCUMENT_2",
-    "FLAG_DOCUMENT_3",
-    "FLAG_DOCUMENT_4",
-    "FLAG_DOCUMENT_5",
-    "FLAG_DOCUMENT_6",
-    "FLAG_DOCUMENT_7",
-    "FLAG_DOCUMENT_8",
-    "FLAG_DOCUMENT_9",
-    "FLAG_DOCUMENT_10",
-    "FLAG_DOCUMENT_11",
-    "FLAG_DOCUMENT_12",
-    "FLAG_DOCUMENT_13",
-    "FLAG_DOCUMENT_14",
-    "FLAG_DOCUMENT_15",
-    "FLAG_DOCUMENT_16",
-    "FLAG_DOCUMENT_17",
-    "FLAG_DOCUMENT_18",
-    "FLAG_DOCUMENT_19",
-    "FLAG_DOCUMENT_20",
-    "FLAG_DOCUMENT_21"
-]
-list_num_features = [
-    "CNT_CHILDREN",
-    "AMT_INCOME_TOTAL",
-    "AMT_CREDIT",
-    "AMT_ANNUITY",
-    "AMT_GOODS_PRICE",
-    "DAYS_EMPLOYED",
-    "DAYS_REGISTRATION",
-    "DAYS_ID_PUBLISH",
-    "REGION_RATING_CLIENT",
-    "REGION_POPULATION_RELATIVE",
-    "CNT_FAM_MEMBERS",
-    "HOUR_APPR_PROCESS_START",
-    "OWN_CAR_AGE",
-    "EXT_SOURCE_1",
-    "EXT_SOURCE_2",
-    "EXT_SOURCE_3",
-    "APARTMENTS_AVG",
-    "BASEMENTAREA_AVG",
-    "YEARS_BEGINEXPLUATATION_AVG",
-    "YEARS_BUILD_AVG",
-    "COMMONAREA_AVG",
-    "ELEVATORS_AVG",
-    "ENTRANCES_AVG",
-    "FLOORSMAX_AVG",
-    "FLOORSMIN_AVG",
-    "LANDAREA_AVG",
-    "LIVINGAPARTMENTS_AVG",
-    "LIVINGAREA_AVG",
-    "NONLIVINGAPARTMENTS_AVG",
-    "NONLIVINGAREA_AVG",
-    "APARTMENTS_MODE",
-    "YEARS_BEGINEXPLUATATION_MODE",
-    "FLOORSMIN_MODE",
-    "LIVINGAREA_MODE",
-    "LANDAREA_MEDI",
-    "TOTALAREA_MODE",
-    "OBS_30_CNT_SOCIAL_CIRCLE",
-    "DEF_30_CNT_SOCIAL_CIRCLE",
-    "DEF_60_CNT_SOCIAL_CIRCLE",
-    "DAYS_LAST_PHONE_CHANGE",
-    "AMT_REQ_CREDIT_BUREAU_HOUR",
-    "AMT_REQ_CREDIT_BUREAU_DAY",
-    "AMT_REQ_CREDIT_BUREAU_WEEK",
-    "AMT_REQ_CREDIT_BUREAU_MON",
-    "AMT_REQ_CREDIT_BUREAU_QRT",
-    "AMT_REQ_CREDIT_BUREAU_YEAR",
-    "AGE_INT",
-    "annuity_income_ratio",
-    "credit_annuity_ratio",
-    "credit_goods_price_ratio",
-    "credit_downpayment"
-]
 
 #load serialized objects
 # data_dict = joblib.load("./bin/data_dict.joblib")
@@ -130,49 +25,36 @@ scaler = joblib.load("./bin/scaler.joblib")
 model = joblib.load("./bin/model.joblib")
 
 #---------------------------------------------------------------------
-#data pre-processing (training set)
-
-#SimpleImputing (most frequent) and ohe of categorical features
-cat_array = categorical_imputer.transform(df_train[list_cat_features])
-cat_array = ohe.transform(cat_array).todense()
-
-#SimpleImputing (median) and StandardScaling of numerical features
-num_array = simple_imputer.transform(df_train[list_num_features])
-num_array = scaler.transform(num_array)
-
-#concatenate
-X_train = np.concatenate([cat_array, num_array], axis=1)
-X_train = np.asarray(X_train)
-
-#building dataframe with post-preprocessed data (training set)
-cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
-features_list_after_prepr = cat_features_list_after_ohe + list_num_features
-ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
-
-#---------------------------------------------------------------------
 #data pre-processing (test set)
 
-#SimpleImputing (most frequent) and ohe of categorical features
-cat_array = categorical_imputer.transform(df_test[list_cat_features])
-cat_array = ohe.transform(cat_array).todense()
+#create df of features by type
+cat_features = df_test.select_dtypes(include=['object']).drop(['SK_ID_CURR'], axis=1)
+num_features = df_test.select_dtypes(exclude=['object'])
 
-#SimpleImputing (median) and StandardScaling of numerical features
-num_array = simple_imputer.transform(df_test[list_num_features])
-num_array = scaler.transform(num_array)
+#imputation
+cat_features = categorical_imputer.transform(cat_features)
+num_features = simple_imputer.transform(num_features)
+
+#One hot encoding categorical variables
+cat_array = ohe.transform(cat_features).todense()
+cat_array = np.asarray(cat_array)
+
+#Standard Scaling numerical variables
+num_array = scaler.transform(num_features)
 
 #concatenate
-X = np.concatenate([cat_array, num_array], axis=1)
-X = np.asarray(X)
+X_test = np.concatenate([cat_array, num_array], axis=1)
+X_test = np.asarray(X_test)
 
-#building dataframe with post-preprocessed data (testing set)
-cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
-features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
-ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
+# #building dataframe with post-preprocessed data (testing set)
+# cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+# features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
+# ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
 
-#---------------------------------------------------------------------
-#shap values
-sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
-log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
+# #---------------------------------------------------------------------
+# #shap values
+# sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
+# log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
 
 #######################################################################
 #create fast API instance
@@ -243,14 +125,12 @@ async def predict(id: int):
     else:
        
         #prediction
-        result_proba = model.predict_proba(X)
+        result_proba = model.predict_proba(X_test)
         y_pred_proba = result_proba[:, 1]
-        # threshold = 0.48
-        # y_pred = y_pred_proba > threshold
-        # y_pred = y_pred.astype(float)
+
         
         df_test["pred"] = y_pred_proba
-        df_test["pred"] = round(df_test["pred"].astype(np.float64),3)
+        df_test["pred"] = round(df_test["pred"].astype(np.float64),4)
         
         #filtering by client's id
         df_test_by_id = df_test[df_test["SK_ID_CURR"] == id]
