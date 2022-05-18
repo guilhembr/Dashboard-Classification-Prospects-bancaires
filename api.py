@@ -5,8 +5,6 @@ import json
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.base import TransformerMixin
-import shap
 
 
 #######################################################################
@@ -43,16 +41,6 @@ num_array = scaler.transform(num_features)
 #concatenate
 X_test = np.concatenate([cat_array, num_array], axis=1)
 X_test = np.asarray(X_test)
-
-# #building dataframe with post-preprocessed data (testing set)
-# cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
-# features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
-# ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
-
-# #---------------------------------------------------------------------
-# #shap values
-# sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
-# log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
 
 #######################################################################
 #create fast API instance
@@ -147,6 +135,10 @@ async def predict(id: int):
 
 #kill processes on port : kill -9 $(lsof -t -i:"8000")
 
+#heroku login
+# #heroku git:remote -a projetoc-scoring
+#git push heroku main
+#heroku ps:scale web=1
 
 #------------FUTURE IMPROVEMENTS-----------------
 
