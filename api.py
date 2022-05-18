@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.base import TransformerMixin
+import shap
 
 
 #######################################################################
@@ -13,7 +14,8 @@ from sklearn.base import TransformerMixin
 #---------------------------------------------------------------------
 
 #loading data
-df_test = pd.read_csv("./dashboard_data/df_test.csv").astype(object)
+df_train = pd.read_csv("./dashboard_data/df_train.csv")
+df_test = pd.read_csv("./dashboard_data/df_test.csv")
 
 #define list of cat and num features
 list_cat_features = ["NAME_CONTRACT_TYPE",
@@ -25,7 +27,6 @@ list_cat_features = ["NAME_CONTRACT_TYPE",
     "NAME_EDUCATION_TYPE",
     "NAME_FAMILY_STATUS",
     "NAME_HOUSING_TYPE",
-    "REGION_POPULATION_RELATIVE",
     "FLAG_MOBIL",
     "FLAG_EMP_PHONE",
     "FLAG_WORK_PHONE",
@@ -33,10 +34,7 @@ list_cat_features = ["NAME_CONTRACT_TYPE",
     "FLAG_PHONE",
     "FLAG_EMAIL",
     "OCCUPATION_TYPE",
-    "CNT_FAM_MEMBERS",
-    "REGION_RATING_CLIENT",
     "WEEKDAY_APPR_PROCESS_START",
-    "HOUR_APPR_PROCESS_START",
     "REG_REGION_NOT_LIVE_REGION",
     "REG_REGION_NOT_WORK_REGION",
     "LIVE_REGION_NOT_WORK_REGION",
@@ -78,6 +76,10 @@ list_num_features = [
     "DAYS_EMPLOYED",
     "DAYS_REGISTRATION",
     "DAYS_ID_PUBLISH",
+    "REGION_RATING_CLIENT",
+    "REGION_POPULATION_RELATIVE",
+    "CNT_FAM_MEMBERS",
+    "HOUR_APPR_PROCESS_START",
     "OWN_CAR_AGE",
     "EXT_SOURCE_1",
     "EXT_SOURCE_2",
@@ -120,7 +122,7 @@ list_num_features = [
 ]
 
 #load serialized objects
-data_dict = joblib.load("./bin/data_dict.joblib")
+# data_dict = joblib.load("./bin/data_dict.joblib")
 ohe = joblib.load("./bin/ohe.joblib")
 categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
 simple_imputer = joblib.load("./bin/simple_imputer.joblib")
@@ -128,7 +130,27 @@ scaler = joblib.load("./bin/scaler.joblib")
 model = joblib.load("./bin/model.joblib")
 
 #---------------------------------------------------------------------
-#data pre-processing
+#data pre-processing (training set)
+
+#SimpleImputing (most frequent) and ohe of categorical features
+cat_array = categorical_imputer.transform(df_train[list_cat_features])
+cat_array = ohe.transform(cat_array).todense()
+
+#SimpleImputing (median) and StandardScaling of numerical features
+num_array = simple_imputer.transform(df_train[list_num_features])
+num_array = scaler.transform(num_array)
+
+#concatenate
+X_train = np.concatenate([cat_array, num_array], axis=1)
+X_train = np.asarray(X_train)
+
+#building dataframe with post-preprocessed data (training set)
+cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+features_list_after_prepr = cat_features_list_after_ohe + list_num_features
+ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
+
+#---------------------------------------------------------------------
+#data pre-processing (test set)
 
 #SimpleImputing (most frequent) and ohe of categorical features
 cat_array = categorical_imputer.transform(df_test[list_cat_features])
@@ -142,22 +164,19 @@ num_array = scaler.transform(num_array)
 X = np.concatenate([cat_array, num_array], axis=1)
 X = np.asarray(X)
 
+#building dataframe with post-preprocessed data (testing set)
+cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
+ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
+
 #---------------------------------------------------------------------
 #shap values
-
+sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
+log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
 
 #######################################################################
 #create fast API instance
 app = FastAPI()
-
-#create model
-ScoringModel = create_model(
-    "ScoringModel",
-    **data_dict,
-    __base__=BaseModel,
-)
-
-ScoringModel.update_forward_refs()
 
 @app.get("/api/clients")
 async def clients_id():
@@ -178,7 +197,7 @@ async def client_details(id: int):
         id (int): client id in the test set
 
     Returns:
-        dict: client's details
+        client (dict): client's details
     """
     clients_id = df_test["SK_ID_CURR"].to_list()
     
@@ -202,6 +221,20 @@ async def client_details(id: int):
 
 @app.get("/api/clients/{id}/prediction")
 async def predict(id: int):
+    """Generate prediction and SHAP inputs for a selected client
+
+    Args:
+        id (int): SK_ID_CURR selected
+
+    Raises:
+        HTTPException: If SK_ID_CURR not found
+
+    Returns:
+        prediction_by_id (json) : dataset including prediction for the selected client
+        log_reg_explainer (explainer) : SHAP Kernel Explainer
+        shap_vals (list) : List of 2 arrays for 0 and 1 prediction classes
+        features_list_after_prepr_test (list) : list of feature names
+    """
     
     clients_id = df_test["SK_ID_CURR"].to_list()
     
@@ -223,14 +256,13 @@ async def predict(id: int):
         df_test_by_id = df_test[df_test["SK_ID_CURR"] == id]
         
         prediction_by_id = df_test_by_id.to_json()
-                
+        
         return prediction_by_id
 
+#------------Cheat Sheet-----------------
+    
 #Run the API with uvicorn
 #uvicorn api:app --reload  
-
-# if __name__ == "__main__":
-#     uvicorn.run(app, host="127.0.0.1")
     
 #requirements.txt
 #pip list --format=freeze > requirements.txt
@@ -238,7 +270,17 @@ async def predict(id: int):
 #kill processes on port : kill -9 $(lsof -t -i:"8000")
 
 
-# #Route with a single parameter, returns the parameter within a message located at /Scoring
+#------------FUTURE IMPROVEMENTS-----------------
+
+# #create model
+# ScoringModel = create_model(
+#     "ScoringModel",
+#     **data_dict,
+#     __base__=BaseModel,
+# )
+
+# ScoringModel.update_forward_refs()
+
 # @app.post("/scoring")
 # async def predict_scoring(item: ScoringModel):
 #     item_dict = item.dict()
@@ -247,3 +289,5 @@ async def predict(id: int):
 #     df = df.astype(object)
 
 #     return json.dumps(model.predict_proba(X).tolist())
+
+

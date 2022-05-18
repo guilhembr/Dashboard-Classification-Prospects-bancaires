@@ -6,8 +6,13 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import seaborn as sns
 import requests
+import joblib
+import shap
+# import streamlit.components.v1 as components
 
+shap.initjs()
 st.set_page_config(layout="wide")
+st.set_option('deprecation.showPyplotGlobalUse', False)
 
 ########################################################
 # Session for the API
@@ -47,8 +52,11 @@ def client_prediction(id):
 	if response:
 		return response
 	else:
-		return "Error"    
+		return "Error"
 
+########################################################
+# Functions to automate the graphs
+########################################################
 	
 def chart_kde(title,row,df,col,client):
 	"""Définition des graphes KDE avec une ligne verticale indiquant la position du client"""
@@ -116,6 +124,15 @@ def color(pred):
 	else :
 		col='Red'
 	return col
+
+# def st_shap(plot, height=None):
+# 	"""Fonction permettant l'affichage de graphique shap values"""
+# 	shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+# 	components.html(shap_html, height=height)
+ 
+########################################################
+#Main function : app()
+######################################################## 
   
 def app():
 	"""Fonction générant la page 2 du dashboard. Ne prend pas de paramètre en entrée.
@@ -126,10 +143,10 @@ def app():
 	st.sidebar.write("")
 	st.sidebar.write("")
 
-	##############################################################################
-	#Infos Client
-	#-----------------------------------------------------------------------------
-   
+########################################################
+#Client Infos
+########################################################
+
 	#Get Client
 	client_id = st.sidebar.selectbox("Client Id List", client())
 	
@@ -160,10 +177,10 @@ def app():
 	st.sidebar.markdown("Ratio Revenus/Annuité: " + str(round(prediction["annuity_income_ratio"].iloc[0],2)))
 	st.sidebar.markdown("Apport: " + str(prediction["credit_downpayment"].iloc[0]))
 	
-	##############################################################################
-	#Score Client
-	#-----------------------------------------------------------------------------
-	
+########################################################
+#Client Score 
+########################################################
+
 	st.subheader("Score Client")
 	st.write("Prédiction du score de solvabilité du client. Le seuil d'approbation est fixé à 0,48.")
 	
@@ -188,21 +205,198 @@ def app():
 
 	st.plotly_chart(fig)
  
-	
+########################################################
+#SHAP Client
+########################################################
 
-	##############################################################################
-	#Comparaison Clientèle
-	#-----------------------------------------------------------------------------
- 
-	#Data comparison (training set)
 	df = pd.read_csv("./dashboard_data/df_train.csv")
+	df_test = pd.read_csv("./dashboard_data/df_test.csv")
+
+	list_cat_features = ["NAME_CONTRACT_TYPE",
+    "CODE_GENDER",
+    "FLAG_OWN_CAR",
+    "FLAG_OWN_REALTY",
+    "NAME_TYPE_SUITE",
+    "NAME_INCOME_TYPE",
+    "NAME_EDUCATION_TYPE",
+    "NAME_FAMILY_STATUS",
+    "NAME_HOUSING_TYPE",
+    "FLAG_MOBIL",
+    "FLAG_EMP_PHONE",
+    "FLAG_WORK_PHONE",
+    "FLAG_CONT_MOBILE",
+    "FLAG_PHONE",
+    "FLAG_EMAIL",
+    "OCCUPATION_TYPE",
+    "WEEKDAY_APPR_PROCESS_START",
+    "REG_REGION_NOT_LIVE_REGION",
+    "REG_REGION_NOT_WORK_REGION",
+    "LIVE_REGION_NOT_WORK_REGION",
+    "REG_CITY_NOT_LIVE_CITY",
+    "REG_CITY_NOT_WORK_CITY",
+    "LIVE_CITY_NOT_WORK_CITY",
+    "ORGANIZATION_TYPE",
+    "FONDKAPREMONT_MODE",
+    "HOUSETYPE_MODE",
+    "WALLSMATERIAL_MODE",
+    "EMERGENCYSTATE_MODE",
+    "FLAG_DOCUMENT_2",
+    "FLAG_DOCUMENT_3",
+    "FLAG_DOCUMENT_4",
+    "FLAG_DOCUMENT_5",
+    "FLAG_DOCUMENT_6",
+    "FLAG_DOCUMENT_7",
+    "FLAG_DOCUMENT_8",
+    "FLAG_DOCUMENT_9",
+    "FLAG_DOCUMENT_10",
+    "FLAG_DOCUMENT_11",
+    "FLAG_DOCUMENT_12",
+    "FLAG_DOCUMENT_13",
+    "FLAG_DOCUMENT_14",
+    "FLAG_DOCUMENT_15",
+    "FLAG_DOCUMENT_16",
+    "FLAG_DOCUMENT_17",
+    "FLAG_DOCUMENT_18",
+    "FLAG_DOCUMENT_19",
+    "FLAG_DOCUMENT_20",
+    "FLAG_DOCUMENT_21"
+]
+	list_num_features = [
+    "CNT_CHILDREN",
+    "AMT_INCOME_TOTAL",
+    "AMT_CREDIT",
+    "AMT_ANNUITY",
+    "AMT_GOODS_PRICE",
+    "DAYS_EMPLOYED",
+    "DAYS_REGISTRATION",
+    "DAYS_ID_PUBLISH",
+    "REGION_RATING_CLIENT",
+    "REGION_POPULATION_RELATIVE",
+    "CNT_FAM_MEMBERS",
+    "HOUR_APPR_PROCESS_START",
+    "OWN_CAR_AGE",
+    "EXT_SOURCE_1",
+    "EXT_SOURCE_2",
+    "EXT_SOURCE_3",
+    "APARTMENTS_AVG",
+    "BASEMENTAREA_AVG",
+    "YEARS_BEGINEXPLUATATION_AVG",
+    "YEARS_BUILD_AVG",
+    "COMMONAREA_AVG",
+    "ELEVATORS_AVG",
+    "ENTRANCES_AVG",
+    "FLOORSMAX_AVG",
+    "FLOORSMIN_AVG",
+    "LANDAREA_AVG",
+    "LIVINGAPARTMENTS_AVG",
+    "LIVINGAREA_AVG",
+    "NONLIVINGAPARTMENTS_AVG",
+    "NONLIVINGAREA_AVG",
+    "APARTMENTS_MODE",
+    "YEARS_BEGINEXPLUATATION_MODE",
+    "FLOORSMIN_MODE",
+    "LIVINGAREA_MODE",
+    "LANDAREA_MEDI",
+    "TOTALAREA_MODE",
+    "OBS_30_CNT_SOCIAL_CIRCLE",
+    "DEF_30_CNT_SOCIAL_CIRCLE",
+    "DEF_60_CNT_SOCIAL_CIRCLE",
+    "DAYS_LAST_PHONE_CHANGE",
+    "AMT_REQ_CREDIT_BUREAU_HOUR",
+    "AMT_REQ_CREDIT_BUREAU_DAY",
+    "AMT_REQ_CREDIT_BUREAU_WEEK",
+    "AMT_REQ_CREDIT_BUREAU_MON",
+    "AMT_REQ_CREDIT_BUREAU_QRT",
+    "AMT_REQ_CREDIT_BUREAU_YEAR",
+    "AGE_INT",
+    "annuity_income_ratio",
+    "credit_annuity_ratio",
+    "credit_goods_price_ratio",
+    "credit_downpayment"
+]
+
+	ohe = joblib.load("./bin/ohe.joblib")
+	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
+	simple_imputer = joblib.load("./bin/simple_imputer.joblib")
+	scaler = joblib.load("./bin/scaler.joblib")
+	model = joblib.load("./bin/model.joblib")
 	
-	#changing type of features
+	#---------------------------------------------------------------------
+	#data pre-processing (training set)
+
+	#SimpleImputing (most frequent) and ohe of categorical features
+	cat_array = categorical_imputer.transform(df[list_cat_features])
+	cat_array = ohe.transform(cat_array).todense()
+
+	#SimpleImputing (median) and StandardScaling of numerical features
+	num_array = simple_imputer.transform(df[list_num_features])
+	num_array = scaler.transform(num_array)
+
+	#concatenate
+	X_train = np.concatenate([cat_array, num_array], axis=1)
+	X_train = np.asarray(X_train)
+
+	#building dataframe with post-preprocessed data (training set)
+	cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+	features_list_after_prepr = cat_features_list_after_ohe + list_num_features
+	ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
+
+	#---------------------------------------------------------------------
+	#data pre-processing (test set)
+
+	#SimpleImputing (most frequent) and ohe of categorical features
+	cat_array = categorical_imputer.transform(df_test[list_cat_features])
+	cat_array = ohe.transform(cat_array).todense()
+
+	#SimpleImputing (median) and StandardScaling of numerical features
+	num_array = simple_imputer.transform(df_test[list_num_features])
+	num_array = scaler.transform(num_array)
+
+	#concatenate
+	X = np.concatenate([cat_array, num_array], axis=1)
+	X = np.asarray(X)
+
+	#building dataframe with post-preprocessed data (testing set)
+	cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+	features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
+	ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
+
+	#---------------------------------------------------------------------
+	#shap values
+	sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
+	log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
+
+	#shap values
+	ohe_dataframe_test["SK_ID_CURR"] = df_test["SK_ID_CURR"]
+	sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
+	sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
+	shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
+
+	#Layout
+	st.subheader("Explication du score client")
+ 
+	st.write("Analyse des principales variables ayant contribuées à la prédiction réalisée par le modèle.")
+
+	st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
+										shap_vals[1][0],
+										sub_sampled_test_data[0],
+										feature_names=features_list_after_prepr_test,
+										max_display=10
+          ))
+ 
+
+########################################################
+#Comparaison with Training population
+########################################################
+
+	#changing type of Data comparison features
 	df["CNT_CHILDREN"] = df["CNT_CHILDREN"].astype("int64")
 	df["AGE_INT"] = df["AGE_INT"].astype("int64")
 	
 	#changing sign of features
 	df["credit_downpayment"] = abs(df["credit_downpayment"])
+	
+	df['DAYS_EMPLOYED'].replace({365243: np.nan}, inplace = True)
 	df["DAYS_EMPLOYED"] = abs(df["DAYS_EMPLOYED"])	
 	
 	#renaming pred column in prediction row to TARGET to match with training set
@@ -215,7 +409,7 @@ def app():
 	#Reset index
 	df = df.reset_index(drop=True)
 
-	#Comparaison clientèle
+	#Layout
 	st.subheader("Comparaison clientèle")
  
 	st.write("Analyse des principales caractéristiques du prospect par rapport à la population.")
