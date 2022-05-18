@@ -202,8 +202,9 @@ def app():
             'thickness': 1,
             'value': 0.48}}))
 
+	fig.update_layout(height=500, width=1200)
 
-	st.plotly_chart(fig)
+	st.plotly_chart(fig, height=500, width=1200)
  
 ########################################################
 #SHAP Client
@@ -211,109 +212,8 @@ def app():
 
 	df = pd.read_csv("./dashboard_data/df_train.csv")
 	df_test = pd.read_csv("./dashboard_data/df_test.csv")
-
-	list_cat_features = ["NAME_CONTRACT_TYPE",
-    "CODE_GENDER",
-    "FLAG_OWN_CAR",
-    "FLAG_OWN_REALTY",
-    "NAME_TYPE_SUITE",
-    "NAME_INCOME_TYPE",
-    "NAME_EDUCATION_TYPE",
-    "NAME_FAMILY_STATUS",
-    "NAME_HOUSING_TYPE",
-    "FLAG_MOBIL",
-    "FLAG_EMP_PHONE",
-    "FLAG_WORK_PHONE",
-    "FLAG_CONT_MOBILE",
-    "FLAG_PHONE",
-    "FLAG_EMAIL",
-    "OCCUPATION_TYPE",
-    "WEEKDAY_APPR_PROCESS_START",
-    "REG_REGION_NOT_LIVE_REGION",
-    "REG_REGION_NOT_WORK_REGION",
-    "LIVE_REGION_NOT_WORK_REGION",
-    "REG_CITY_NOT_LIVE_CITY",
-    "REG_CITY_NOT_WORK_CITY",
-    "LIVE_CITY_NOT_WORK_CITY",
-    "ORGANIZATION_TYPE",
-    "FONDKAPREMONT_MODE",
-    "HOUSETYPE_MODE",
-    "WALLSMATERIAL_MODE",
-    "EMERGENCYSTATE_MODE",
-    "FLAG_DOCUMENT_2",
-    "FLAG_DOCUMENT_3",
-    "FLAG_DOCUMENT_4",
-    "FLAG_DOCUMENT_5",
-    "FLAG_DOCUMENT_6",
-    "FLAG_DOCUMENT_7",
-    "FLAG_DOCUMENT_8",
-    "FLAG_DOCUMENT_9",
-    "FLAG_DOCUMENT_10",
-    "FLAG_DOCUMENT_11",
-    "FLAG_DOCUMENT_12",
-    "FLAG_DOCUMENT_13",
-    "FLAG_DOCUMENT_14",
-    "FLAG_DOCUMENT_15",
-    "FLAG_DOCUMENT_16",
-    "FLAG_DOCUMENT_17",
-    "FLAG_DOCUMENT_18",
-    "FLAG_DOCUMENT_19",
-    "FLAG_DOCUMENT_20",
-    "FLAG_DOCUMENT_21"
-]
-	list_num_features = [
-    "CNT_CHILDREN",
-    "AMT_INCOME_TOTAL",
-    "AMT_CREDIT",
-    "AMT_ANNUITY",
-    "AMT_GOODS_PRICE",
-    "DAYS_EMPLOYED",
-    "DAYS_REGISTRATION",
-    "DAYS_ID_PUBLISH",
-    "REGION_RATING_CLIENT",
-    "REGION_POPULATION_RELATIVE",
-    "CNT_FAM_MEMBERS",
-    "HOUR_APPR_PROCESS_START",
-    "OWN_CAR_AGE",
-    "EXT_SOURCE_1",
-    "EXT_SOURCE_2",
-    "EXT_SOURCE_3",
-    "APARTMENTS_AVG",
-    "BASEMENTAREA_AVG",
-    "YEARS_BEGINEXPLUATATION_AVG",
-    "YEARS_BUILD_AVG",
-    "COMMONAREA_AVG",
-    "ELEVATORS_AVG",
-    "ENTRANCES_AVG",
-    "FLOORSMAX_AVG",
-    "FLOORSMIN_AVG",
-    "LANDAREA_AVG",
-    "LIVINGAPARTMENTS_AVG",
-    "LIVINGAREA_AVG",
-    "NONLIVINGAPARTMENTS_AVG",
-    "NONLIVINGAREA_AVG",
-    "APARTMENTS_MODE",
-    "YEARS_BEGINEXPLUATATION_MODE",
-    "FLOORSMIN_MODE",
-    "LIVINGAREA_MODE",
-    "LANDAREA_MEDI",
-    "TOTALAREA_MODE",
-    "OBS_30_CNT_SOCIAL_CIRCLE",
-    "DEF_30_CNT_SOCIAL_CIRCLE",
-    "DEF_60_CNT_SOCIAL_CIRCLE",
-    "DAYS_LAST_PHONE_CHANGE",
-    "AMT_REQ_CREDIT_BUREAU_HOUR",
-    "AMT_REQ_CREDIT_BUREAU_DAY",
-    "AMT_REQ_CREDIT_BUREAU_WEEK",
-    "AMT_REQ_CREDIT_BUREAU_MON",
-    "AMT_REQ_CREDIT_BUREAU_QRT",
-    "AMT_REQ_CREDIT_BUREAU_YEAR",
-    "AGE_INT",
-    "annuity_income_ratio",
-    "credit_annuity_ratio",
-    "credit_goods_price_ratio",
-    "credit_downpayment"
-]
+	df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
+	df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
 
 	ohe = joblib.load("./bin/ohe.joblib")
 	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
@@ -324,6 +224,9 @@ def app():
 	#---------------------------------------------------------------------
 	#data pre-processing (training set)
 
+	list_cat_features = df_test_cat_features.columns.to_list()
+	list_num_features = df_test_num_features.columns.to_list()
+ 
 	#SimpleImputing (most frequent) and ohe of categorical features
 	cat_array = categorical_imputer.transform(df[list_cat_features])
 	cat_array = ohe.transform(cat_array).todense()

@@ -15,6 +15,8 @@ import shap
 
 #loading data
 df_test = pd.read_csv("./dashboard_data/df_test.csv")
+df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
+df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
 
 #load serialized objects
 # data_dict = joblib.load("./bin/data_dict.joblib")
@@ -27,13 +29,9 @@ model = joblib.load("./bin/model.joblib")
 #---------------------------------------------------------------------
 #data pre-processing (test set)
 
-#create df of features by type
-cat_features = df_test.select_dtypes(include=['object']).drop(['SK_ID_CURR'], axis=1)
-num_features = df_test.select_dtypes(exclude=['object'])
-
 #imputation
-cat_features = categorical_imputer.transform(cat_features)
-num_features = simple_imputer.transform(num_features)
+cat_features = categorical_imputer.transform(df_test_cat_features)
+num_features = simple_imputer.transform(df_test_num_features)
 
 #One hot encoding categorical variables
 cat_array = ohe.transform(cat_features).todense()
