@@ -240,7 +240,7 @@ def app():
 	X_train = np.asarray(X_train)
 
 	#building dataframe with post-preprocessed data (training set)
-	cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
 	features_list_after_prepr = cat_features_list_after_ohe + list_num_features
 	ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
 
@@ -260,7 +260,7 @@ def app():
 	X = np.asarray(X)
 
 	#building dataframe with post-preprocessed data (testing set)
-	cat_features_list_after_ohe = ohe.get_feature_names(list_cat_features).tolist()
+	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
 	features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
 	ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
 
