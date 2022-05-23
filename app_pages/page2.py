@@ -17,6 +17,7 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 ########################################################
 # Session for the API
 ########################################################
+@st.experimental_singleton
 def fetch(session, url):
 
 	try:
@@ -30,7 +31,7 @@ session = requests.Session()
 ########################################################
 # Functions to call the EndPoints
 ########################################################
-
+@st.experimental_memo
 def client():
 	#Getting Client details
 	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients")
@@ -38,7 +39,8 @@ def client():
 		return response["clientsId"]
 	else:
 		return "Error"
-	
+
+@st.experimental_memo	
 def client_details(id):
 	#Getting Client details
 	response = fetch(session,f"http://projetoc-scoring.herokuapp.com/api/clients/{id}")
@@ -46,7 +48,8 @@ def client_details(id):
 		return response
 	else:
 		return "Error"
-	
+
+@st.experimental_memo	
 def client_prediction(id):
     #Getting Client prediction
 	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients/{id}/prediction")
@@ -58,7 +61,8 @@ def client_prediction(id):
 ########################################################
 # Functions to automate the graphs
 ########################################################
-	
+
+@st.experimental_singleton
 def chart_kde(title,row,df,col,client):
 	"""Définition des graphes KDE avec une ligne verticale indiquant la position du client"""
 	with row:
@@ -70,6 +74,7 @@ def chart_kde(title,row,df,col,client):
 		plt.legend()
 		st.pyplot(fig)
 
+@st.experimental_singleton
 def chart_bar(title,row,df,col,client):
 	"""Définition des graphes barres avec une ligne horizontale indiquant la position du client"""
 	with row:
@@ -98,6 +103,7 @@ def chart_bar(title,row,df,col,client):
 			plt.axhline(y=sorted(data[col].unique()).index(df.loc[client,col]),xmax=0.95,color="black",linewidth=4)
 			st.pyplot(fig)
 
+@st.experimental_singleton
 def display_charts(df,client):
 	"""Affichage des graphes de comparaison pour le client sélectionné """
 	row1_1,row1_2,row1_3 = st.columns(3)
@@ -118,6 +124,7 @@ def display_charts(df,client):
 	chart_bar("Répartition du statut professionel",row3_2,df,'NAME_INCOME_TYPE',client)
 	chart_bar("Répartition du type de logement",row3_3,df,'NAME_HOUSING_TYPE',client)
 
+@st.experimental_singleton
 def color(pred):
 	'''Définition de la couleur selon la prédiction'''
 	if pred=='Approved':
@@ -134,7 +141,8 @@ def color(pred):
 ########################################################
 #Main function : app()
 ######################################################## 
-  
+
+@st.experimental_singleton  
 def app():
 	"""Fonction générant la page 2 du dashboard. Ne prend pas de paramètre en entrée.
 	"""

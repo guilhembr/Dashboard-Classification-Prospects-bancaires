@@ -10,7 +10,7 @@ from matplotlib.image import imread
 #######################################################################
 # Loading data (labelled)
 #---------------------------------------------------------------------
-
+@st.experimental_singleton
 def app():
     """Fonction générant la page 1 du dashboard. Ne prend pas de paramètre en entrée.
     """
