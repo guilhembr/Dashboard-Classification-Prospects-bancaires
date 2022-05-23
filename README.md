@@ -55,10 +55,10 @@ In addition, customer relationship managers have brought up the fact that custom
     - 4.2) `joblib` serialization of model and pre-processing transformers (`bin` folder)
 
 ### API Scoring prediction deployed on Heroku ([see the doc](https://projetoc-scoring.herokuapp.com/docs))
-- API (back-end) used by Streamlit web interface (front-end) to get infos and scoring prediction of an unlabelled client selected in the dashboard (`api.py`)
+- API (back-end) used by Streamlit web interface (front-end) to get infos and scoring prediction of an unlabelled client selected in the dashboard (`api.py` ([see code](https://github.com/guilhembr/P7_Scoring/blob/main/api.py)))
 
 ### Dashboard Streamlit (*french*) ([access the frontend](https://share.streamlit.io/guilhembr/p7_scoring/main/app.py))
-- Multi-pages streamlit dashboard code : `app.py`, `multiapp.py` and `app_pages folder`
+- Multi-pages streamlit dashboard code : `app.py` ([see code](https://github.com/guilhembr/P7_Scoring/blob/main/app.py)), `multiapp.py` and `app_pages folder`
 - Overview of the training set sample with `Pandas Profiling` package
 - Displaying unlabelled test client infos
 - Request the API to obtain prediction of an unlabelled client selected by front-end user
