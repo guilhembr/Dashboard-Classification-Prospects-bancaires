@@ -48,6 +48,7 @@ def client_details(id):
 		return "Error"
 	
 def client_prediction(id):
+    #Getting Client prediction
 	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients/{id}/prediction")
 	if response:
 		return response
@@ -143,9 +144,8 @@ def app():
 	st.sidebar.write("")
 	st.sidebar.write("")
 
-########################################################
 #Client Infos
-########################################################
+#-------------------------------------------------------
 
 	#Get Client
 	client_id = st.sidebar.selectbox("Client Id List", client())
@@ -177,9 +177,8 @@ def app():
 	st.sidebar.markdown("Ratio Revenus/Annuité: " + str(round(prediction["annuity_income_ratio"].iloc[0],2)))
 	st.sidebar.markdown("Apport: " + str(prediction["credit_downpayment"].iloc[0]))
 	
-########################################################
 #Client Score 
-########################################################
+#-------------------------------------------------------
 
 	st.subheader("Score Client")
 	st.write("Prédiction du score de solvabilité du client. Le seuil d'approbation est fixé à 0,48.")
@@ -206,9 +205,8 @@ def app():
 
 	st.plotly_chart(fig, height=500, width=1200)
  
-########################################################
 #SHAP Client
-########################################################
+#-------------------------------------------------------
 
 	df = pd.read_csv("./dashboard_data/df_train.csv")
 	df_test = pd.read_csv("./dashboard_data/df_test.csv")
@@ -288,9 +286,8 @@ def app():
           ))
  
 
-########################################################
 #Comparaison with Training population
-########################################################
+#-------------------------------------------------------
 
 	#changing type of Data comparison features
 	df["CNT_CHILDREN"] = df["CNT_CHILDREN"].astype("int64")

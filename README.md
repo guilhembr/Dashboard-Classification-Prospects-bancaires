@@ -14,7 +14,7 @@ In addition, customer relationship managers have brought up the fact that custom
 
 ## Deliverables
 
-* **Exploratory Notebook** : 
+* **### Exploratory Notebook** : 
     - *1) Pre-processing* 
         - Cleaning of the dataset `application_train` as described in the [`Competition Notebook`](https://colab.research.google.com/drive/1uorVxsO816YOQMbkizlakGC21wS-xVHh#scrollTo=uN03kboJEVSi)
         - Exploratory Data Analysis (EDA)
@@ -39,7 +39,7 @@ In addition, customer relationship managers have brought up the fact that custom
         - Local interpretation (SHAP : beeswarm, force plot) 
             - *please refer to Summary Notebook for most complete SHAP interpretations*
 
-* **Summary Notebook** : *Cleaning, Pre-processing and modeling Notebook*
+* **### Summary Notebook** : *Cleaning, Pre-processing and modeling Notebook*
     - *1) Pre-processing using functions*:
         - 1.1) Setting correct dtypes of features
         - 1.2) Creating new features based on business Knowledge
@@ -54,10 +54,10 @@ In addition, customer relationship managers have brought up the fact that custom
         - 4.1) `.csv` export of Pre-processed Datasets (5% sample of original datasets) (`dashboard_data` folder)
         - 4.2) `joblib` serialization of model and pre-processing transformers (`bin` folder)
 
-* **API Scoring prediction deployed on Heroku** ([see the doc](https://projetoc-scoring.herokuapp.com/docs))
+* **### API Scoring prediction deployed on Heroku** ([see the doc](https://projetoc-scoring.herokuapp.com/docs))
     - API (back-end) used by Streamlit web interface (front-end) to get infos and scoring prediction of an unlabelled client selected in the dashboard (`api.py`)
 
-**Dashboard Streamlit** (*french*) ([access the frontend](https://share.streamlit.io/guilhembr/p7_scoring/main/app.py))
+* **### Dashboard Streamlit** (*french*) ([access the frontend](https://share.streamlit.io/guilhembr/p7_scoring/main/app.py))
     - Multi-pages streamlit dashboard code : `app.py`, `multiapp.py` and `app_pages folder`
     - Overview of the training set sample with `Pandas Profiling` package
     - Displaying unlabelled test client infos
