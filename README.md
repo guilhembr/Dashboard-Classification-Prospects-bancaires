@@ -62,8 +62,12 @@ In addition, customer relationship managers have brought up the fact that custom
 - Overview of the training set sample with `Pandas Profiling` package
 - Displaying unlabelled test client infos
 - Request the API to obtain prediction of an unlabelled client selected by front-end user
+
 - Display prediction result and local interpretation (`SHAP Waterfall Plot`)
+
 - Compare client infos with training set population
+
+
 
 
 ## Reference
