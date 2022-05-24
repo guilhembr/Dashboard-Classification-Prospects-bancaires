@@ -62,13 +62,11 @@ In addition, customer relationship managers have brought up the fact that custom
 - Overview of the training set sample with `Pandas Profiling` package
 - Displaying unlabelled test client infos
 - Request the API to obtain prediction of an unlabelled client selected by front-end user
-
+![Client Jauge](https://github.com/guilhembr/P7_Scoring/blob/main/dashboard_screenshot/jauge_screenshot.png)
 - Display prediction result and local interpretation (`SHAP Waterfall Plot`)
-
+![SHAP Waterfall Client Prediction interpretation](https://github.com/guilhembr/P7_Scoring/blob/main/dashboard_screenshot/waterfall_screenshot.png)
 - Compare client infos with training set population
-
-
-
+![Population Comparison](https://github.com/guilhembr/P7_Scoring/blob/main/dashboard_screenshot/population_comparison_screenshot.png)
 
 ## Reference
 Openclassrooms project from Data Scientist path.  
