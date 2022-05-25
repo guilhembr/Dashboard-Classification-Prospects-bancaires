@@ -44,7 +44,7 @@ def app():
     
     #Pandas Profiling Report
     st.write("Analyse exploratoire d'un échantillon du dataset labellisé de prospect (seules 11 des 101 variables du dataset sont présentées afin de comprendre le profil des prospects)")
-    pr = df_pandas_profiling.profile_report()
+    pr = df_pandas_profiling.profile_report(minimal=True)
     st_profile_report(pr)
 
 if __name__ == "__main__":
