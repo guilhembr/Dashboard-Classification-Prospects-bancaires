@@ -134,6 +134,7 @@ def color(pred):
 #Main function : app()
 ######################################################## 
 
+
 def app():
 	"""Fonction générant la page 2 du dashboard. Ne prend pas de paramètre en entrée.
 	"""

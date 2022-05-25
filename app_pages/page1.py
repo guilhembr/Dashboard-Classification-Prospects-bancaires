@@ -11,7 +11,7 @@ from matplotlib.image import imread
 # Loading data (labelled)
 #---------------------------------------------------------------------
 
-# @st.experimental_singleton(suppress_st_warning=True)
+@st.experimental_singleton(suppress_st_warning=True)
 def app():
     """Fonction générant la page 1 du dashboard. Ne prend pas de paramètre en entrée.
     """
