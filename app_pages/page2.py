@@ -143,13 +143,12 @@ def color(pred):
 # 	components.html(shap_html, height=height)
 
 @st.experimental_memo(suppress_st_warning=True)
-def shap_footing(client_id, df, df_test, df_test_cat_features, df_test_num_features):
+def shap_preproc(df, df_test, df_test_cat_features, df_test_num_features):
 
 	ohe = joblib.load("./bin/ohe.joblib")
 	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
 	simple_imputer = joblib.load("./bin/simple_imputer.joblib")
 	scaler = joblib.load("./bin/scaler.joblib")
-	model = joblib.load("./bin/model.joblib")
 
 	#---------------------------------------------------------------------
 	#data pre-processing (training set)
@@ -195,14 +194,24 @@ def shap_footing(client_id, df, df_test, df_test_cat_features, df_test_num_featu
 	ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
 	ohe_dataframe_test["SK_ID_CURR"] = df_test["SK_ID_CURR"]
 
+	return ohe_dataframe, ohe_dataframe_test, features_list_after_prepr_test
+
+@st.experimental_memo(suppress_st_warning=True)
+def shap_footing(ohe_dataframe):
+	model = joblib.load("./bin/model.joblib")
+
 	sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
 	log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
 
-	sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
-	sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
-	shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
- 
-	st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
+	return log_reg_explainer
+
+def plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, features_list_after_prepr_test):
+    
+    sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
+    sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
+    shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
+    
+    st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
 										shap_vals[1][0],
 										sub_sampled_test_data[0],
 										feature_names=features_list_after_prepr_test,
@@ -297,9 +306,10 @@ def app():
 	st.write("Analyse des principales variables ayant contribuées à la prédiction réalisée par le modèle.")
 
 	#print SHAP waterfall
-	shap_footing(client_id, df, df_test, df_test_cat_features, df_test_num_features)
+	ohe_dataframe, ohe_dataframe_test, features_list_after_prepr_test = shap_preproc(df, df_test, df_test_cat_features, df_test_num_features)
+	log_reg_explainer = shap_footing(ohe_dataframe)
+	plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, features_list_after_prepr_test)
  
-
 #Comparaison with Training population
 #-------------------------------------------------------
 
