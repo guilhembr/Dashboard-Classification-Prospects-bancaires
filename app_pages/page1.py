@@ -10,6 +10,7 @@ from matplotlib.image import imread
 #######################################################################
 # Loading data (labelled)
 #---------------------------------------------------------------------
+st.set_page_config(layout="wide")
 
 def app():
     """Fonction générant la page 1 du dashboard. Ne prend pas de paramètre en entrée.
