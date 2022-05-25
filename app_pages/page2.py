@@ -66,6 +66,20 @@ def load_data():
  
 	return df, df_test, df_test_cat_features, df_test_num_features
 
+@st.experimental_memo(suppress_st_warning=True)
+def transform_df(df):
+    	#changing type of Data comparison features
+	df["CNT_CHILDREN"] = df["CNT_CHILDREN"].astype("int64")
+	df["AGE_INT"] = df["AGE_INT"].astype("int64")
+	
+	#changing sign of features
+	df["credit_downpayment"] = abs(df["credit_downpayment"])
+	
+	df['DAYS_EMPLOYED'].replace({365243: np.nan}, inplace = True)
+	df["DAYS_EMPLOYED"] = abs(df["DAYS_EMPLOYED"])	
+	
+	return df
+
 ########################################################
 # Functions to automate the graphs
 ########################################################
@@ -313,20 +327,11 @@ def app():
 #Comparaison with Training population
 #-------------------------------------------------------
 
-	#changing type of Data comparison features
-	df["CNT_CHILDREN"] = df["CNT_CHILDREN"].astype("int64")
-	df["AGE_INT"] = df["AGE_INT"].astype("int64")
-	
-	#changing sign of features
-	df["credit_downpayment"] = abs(df["credit_downpayment"])
-	
-	df['DAYS_EMPLOYED'].replace({365243: np.nan}, inplace = True)
-	df["DAYS_EMPLOYED"] = abs(df["DAYS_EMPLOYED"])	
-	
 	#renaming pred column in prediction row to TARGET to match with training set
 	prediction.rename(columns={"pred": "TARGET"})
 	
 	#concatenate training set and prediction row
+	df = transform_df(df)
 	frames = [prediction, df]
 	df = pd.concat(frames)
 	
@@ -346,6 +351,7 @@ def app():
 	#display charts
 	idx_client = df.index[df["SK_ID_CURR"]==client_id][0]
 	display_charts(df, idx_client)
+	
  
 if __name__ == "__main__":
 	app()
