@@ -55,6 +55,18 @@ def client_prediction(id):
 		return "Error"
 
 ########################################################
+# Function to load data stored on github
+########################################################
+@st.experimental_memo(suppress_st_warning=True)
+def load_data():
+	df = pd.read_csv("./dashboard_data/df_train.csv")
+	df_test = pd.read_csv("./dashboard_data/df_test.csv")
+	df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
+	df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
+ 
+	return df, df_test, df_test_cat_features, df_test_num_features
+
+########################################################
 # Functions to automate the graphs
 ########################################################
 
@@ -129,6 +141,73 @@ def color(pred):
 # 	"""Fonction permettant l'affichage de graphique shap values"""
 # 	shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
 # 	components.html(shap_html, height=height)
+
+@st.experimental_memo(suppress_st_warning=True)
+def shap_footing(client_id, df, df_test, df_test_cat_features, df_test_num_features):
+
+	ohe = joblib.load("./bin/ohe.joblib")
+	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
+	simple_imputer = joblib.load("./bin/simple_imputer.joblib")
+	scaler = joblib.load("./bin/scaler.joblib")
+	model = joblib.load("./bin/model.joblib")
+
+	#---------------------------------------------------------------------
+	#data pre-processing (training set)
+
+	list_cat_features = df_test_cat_features.columns.to_list()
+	list_num_features = df_test_num_features.columns.to_list()
+
+	#SimpleImputing (most frequent) and ohe of categorical features
+	cat_array = categorical_imputer.transform(df[list_cat_features])
+	cat_array = ohe.transform(cat_array).todense()
+
+	#SimpleImputing (median) and StandardScaling of numerical features
+	num_array = simple_imputer.transform(df[list_num_features])
+	num_array = scaler.transform(num_array)
+
+	#concatenate
+	X_train = np.concatenate([cat_array, num_array], axis=1)
+	X_train = np.asarray(X_train)
+
+	#building dataframe with post-preprocessed data (training set)
+	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
+	features_list_after_prepr = cat_features_list_after_ohe + list_num_features
+	ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
+
+	#---------------------------------------------------------------------
+	#data pre-processing (test set)
+
+	#SimpleImputing (most frequent) and ohe of categorical features
+	cat_array = categorical_imputer.transform(df_test[list_cat_features])
+	cat_array = ohe.transform(cat_array).todense()
+
+	#SimpleImputing (median) and StandardScaling of numerical features
+	num_array = simple_imputer.transform(df_test[list_num_features])
+	num_array = scaler.transform(num_array)
+
+	#concatenate
+	X = np.concatenate([cat_array, num_array], axis=1)
+	X = np.asarray(X)
+
+	#building dataframe with post-preprocessed data (testing set)
+	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
+	features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
+	ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
+	ohe_dataframe_test["SK_ID_CURR"] = df_test["SK_ID_CURR"]
+
+	sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
+	log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
+
+	sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
+	sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
+	shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
+ 
+	st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
+										shap_vals[1][0],
+										sub_sampled_test_data[0],
+										feature_names=features_list_after_prepr_test,
+										max_display=10
+          ))
  
 ########################################################
 #Main function : app()
@@ -143,6 +222,11 @@ def app():
 	st.sidebar.image(logo)
 	st.sidebar.write("")
 	st.sidebar.write("")
+ 
+#Load data
+#-------------------------------------------------------
+
+	df, df_test, df_test_cat_features, df_test_num_features = load_data()
 
 #Client Infos
 #-------------------------------------------------------
@@ -207,83 +291,13 @@ def app():
  
 #SHAP Client
 #-------------------------------------------------------
-
-	df = pd.read_csv("./dashboard_data/df_train.csv")
-	df_test = pd.read_csv("./dashboard_data/df_test.csv")
-	df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
-	df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
-
-	ohe = joblib.load("./bin/ohe.joblib")
-	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
-	simple_imputer = joblib.load("./bin/simple_imputer.joblib")
-	scaler = joblib.load("./bin/scaler.joblib")
-	model = joblib.load("./bin/model.joblib")
-	
-	#---------------------------------------------------------------------
-	#data pre-processing (training set)
-
-	list_cat_features = df_test_cat_features.columns.to_list()
-	list_num_features = df_test_num_features.columns.to_list()
- 
-	#SimpleImputing (most frequent) and ohe of categorical features
-	cat_array = categorical_imputer.transform(df[list_cat_features])
-	cat_array = ohe.transform(cat_array).todense()
-
-	#SimpleImputing (median) and StandardScaling of numerical features
-	num_array = simple_imputer.transform(df[list_num_features])
-	num_array = scaler.transform(num_array)
-
-	#concatenate
-	X_train = np.concatenate([cat_array, num_array], axis=1)
-	X_train = np.asarray(X_train)
-
-	#building dataframe with post-preprocessed data (training set)
-	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
-	features_list_after_prepr = cat_features_list_after_ohe + list_num_features
-	ohe_dataframe = pd.DataFrame(X_train, columns=features_list_after_prepr)
-
-	#---------------------------------------------------------------------
-	#data pre-processing (test set)
-
-	#SimpleImputing (most frequent) and ohe of categorical features
-	cat_array = categorical_imputer.transform(df_test[list_cat_features])
-	cat_array = ohe.transform(cat_array).todense()
-
-	#SimpleImputing (median) and StandardScaling of numerical features
-	num_array = simple_imputer.transform(df_test[list_num_features])
-	num_array = scaler.transform(num_array)
-
-	#concatenate
-	X = np.concatenate([cat_array, num_array], axis=1)
-	X = np.asarray(X)
-
-	#building dataframe with post-preprocessed data (testing set)
-	cat_features_list_after_ohe = ohe.get_feature_names_out(list_cat_features).tolist()
-	features_list_after_prepr_test = cat_features_list_after_ohe + list_num_features
-	ohe_dataframe_test = pd.DataFrame(X, columns=features_list_after_prepr_test)
-
-	#---------------------------------------------------------------------
-	#shap values
-	sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
-	log_reg_explainer = shap.KernelExplainer(model.predict_proba, sub_sampled_train_data)
-
-	#shap values
-	ohe_dataframe_test["SK_ID_CURR"] = df_test["SK_ID_CURR"]
-	sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
-	sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
-	shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
-
-	#Layout
+ 	#Layout
 	st.subheader("Explication du score client")
  
 	st.write("Analyse des principales variables ayant contribuées à la prédiction réalisée par le modèle.")
 
-	st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
-										shap_vals[1][0],
-										sub_sampled_test_data[0],
-										feature_names=features_list_after_prepr_test,
-										max_display=10
-          ))
+	#print SHAP waterfall
+	shap_footing(client_id, df, df_test, df_test_cat_features, df_test_num_features)
  
 
 #Comparaison with Training population
