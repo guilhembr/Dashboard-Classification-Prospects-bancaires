@@ -289,7 +289,7 @@ def plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, featur
 def app():
 	"""Main function generatin page2 of the dashboard
 	"""
-	logo = imread("./app_pages/logo.png")
+	logo = imread("./app_pages/logo.jpeg")
 
 	st.sidebar.image(logo)
 	st.sidebar.write("")
