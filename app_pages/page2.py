@@ -18,7 +18,15 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 # Session for the API
 ########################################################
 def fetch(session, url):
+	"""Create session for the API
 
+	Args:
+		session : session
+		url (link): complete url to connect to
+
+	Returns:
+		result (json): result of the request to the url
+	"""
 	try:
 		result = session.get(url)
 		return result.json()
@@ -47,7 +55,7 @@ def client_details(id):
 		return "Error"
 
 def client_prediction(id):
-    #Getting Client prediction
+	#Getting Client prediction
 	response = fetch(session, f"http://projetoc-scoring.herokuapp.com/api/clients/{id}/prediction")
 	if response:
 		return response
@@ -59,16 +67,32 @@ def client_prediction(id):
 ########################################################
 @st.experimental_memo(suppress_st_warning=True)
 def load_data():
+	"""Load data necessary for the page 2 of the dashboard. 
+ - df_train
+ - df_test
+ - df_test_cat_features
+ - df_test_cat_features
+ 
+	Returns:
+		df, df_test, df_test_cat_features, df_test_num_features : DataFrame loaded
+	"""
 	df = pd.read_csv("./dashboard_data/df_train.csv")
 	df_test = pd.read_csv("./dashboard_data/df_test.csv")
 	df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
-	df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
+	df_test_num_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
  
 	return df, df_test, df_test_cat_features, df_test_num_features
 
 @st.experimental_memo(suppress_st_warning=True)
 def transform_df(df):
-    	#changing type of Data comparison features
+	"""Changes the type of several features to int64 in order to be used for plotting.
+ Taking the absolute value of credit_downpayment to be plotted. 
+ Replacing outliers by NaN in DAYS_EMPLOYED feature. 
+
+	Args:
+		df (DataFrame): dataframe to be transformed
+	"""
+		#changing type of Data comparison features
 	df["CNT_CHILDREN"] = df["CNT_CHILDREN"].astype("int64")
 	df["AGE_INT"] = df["AGE_INT"].astype("int64")
 	
@@ -85,7 +109,7 @@ def transform_df(df):
 ########################################################
 
 def chart_kde(title,row,df,col,client):
-	"""Définition des graphes KDE avec une ligne verticale indiquant la position du client"""
+	"""Building KDE Charts with vertical line for client position"""
 	with row:
 		st.subheader(title)
 		fig,ax = plt.subplots()
@@ -96,7 +120,7 @@ def chart_kde(title,row,df,col,client):
 		st.pyplot(fig)
 
 def chart_bar(title,row,df,col,client):
-	"""Définition des graphes barres avec une ligne horizontale indiquant la position du client"""
+	"""Building bar Charts with vertical line for client position"""
 	with row:
 		st.subheader(title)
 		fig,ax = plt.subplots()
@@ -124,7 +148,7 @@ def chart_bar(title,row,df,col,client):
 			st.pyplot(fig)
 
 def display_charts(df,client):
-	"""Affichage des graphes de comparaison pour le client sélectionné """
+	"""Plotting graphs for selected clientID """
 	row1_1,row1_2,row1_3 = st.columns(3)
 	st.write('')
 	row2_10,row2_2,row2_3 = st.columns(3)
@@ -144,7 +168,7 @@ def display_charts(df,client):
 	chart_bar("Répartition du type de logement",row3_3,df,'NAME_HOUSING_TYPE',client)
 
 def color(pred):
-	'''Définition de la couleur selon la prédiction'''
+	"""Choosing color depending on the prediction"""
 	if pred=='Approved':
 		col='Green'
 	else :
@@ -158,7 +182,17 @@ def color(pred):
 
 @st.experimental_memo(suppress_st_warning=True)
 def shap_preproc(df, df_test, df_test_cat_features, df_test_num_features):
+	"""Pre-processing of the data to be used to calculate SHAP Values.
 
+	Args:
+		df (Dataframe): df_train
+		df_test (Dataframe): df_test
+		df_test_cat_features (Dataframe): df_test_cat_features
+		df_test_num_features (Dataframe): df_test_num_features
+
+	Returns:
+		ohe_dataframe, ohe_dataframe_test, features_list_after_prepr_test : post-encoding training, testing dataframes + list of features
+	"""
 	ohe = joblib.load("./bin/ohe.joblib")
 	categorical_imputer = joblib.load("./bin/categorical_imputer.joblib")
 	simple_imputer = joblib.load("./bin/simple_imputer.joblib")
@@ -212,6 +246,14 @@ def shap_preproc(df, df_test, df_test_cat_features, df_test_num_features):
 
 @st.experimental_memo(suppress_st_warning=True)
 def shap_footing(ohe_dataframe):
+	"""Calculating SHAP Values
+
+	Args:
+		ohe_dataframe (Dataframe): post-encoding training dataframe
+
+	Returns:
+		log_reg_explainer: SHAP explainer for the LogisticRegression Model
+	"""
 	model = joblib.load("./bin/model.joblib")
 
 	sub_sampled_train_data = shap.sample(ohe_dataframe, 50)
@@ -220,17 +262,24 @@ def shap_footing(ohe_dataframe):
 	return log_reg_explainer
 
 def plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, features_list_after_prepr_test):
-    
-    sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
-    sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
-    shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
-    
-    st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
+	"""Plot SHAP Waterfall
+
+	Args:
+		client_id (string): SK_ID_CURR selected in the sidebar
+		ohe_dataframe_test (dataframe): post-encoding testing dataframe
+		log_reg_explainer (explainer): HAP explainer for the LogisticRegression Model
+		features_list_after_prepr_test (list): list of features in df test after OHE
+	"""
+	sub_sampled_test_data = ohe_dataframe_test[ohe_dataframe_test["SK_ID_CURR"] == client_id].drop(columns="SK_ID_CURR")
+	sub_sampled_test_data = sub_sampled_test_data.values.reshape(1,-1)
+	shap_vals = log_reg_explainer.shap_values(sub_sampled_test_data)
+	
+	st.pyplot(shap.plots._waterfall.waterfall_legacy(log_reg_explainer.expected_value[1],
 										shap_vals[1][0],
 										sub_sampled_test_data[0],
 										feature_names=features_list_after_prepr_test,
 										max_display=10
-          ))
+		  ))
  
 ########################################################
 #Main function : app()
@@ -238,7 +287,7 @@ def plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, featur
 
 
 def app():
-	"""Fonction générant la page 2 du dashboard. Ne prend pas de paramètre en entrée.
+	"""Main function generatin page2 of the dashboard
 	"""
 	logo = imread("./app_pages/logo.png")
 
@@ -292,21 +341,21 @@ def app():
 	
 	fig = go.Figure(go.Indicator(
 	mode = "gauge+number+delta",
-    value = prediction["pred"].iloc[0],
-    number = {'font':{'size':48}},
-    domain = {'x': [0, 1], 'y': [0, 1]},
-    title = {'text': decision, 'font': {'size': 28, 'color':color(decision)}},
-    delta = {'reference': 0.48, 'increasing': {'color': "red"},'decreasing':{'color':'green'}},
-    gauge = {
-        'axis': {'range': [0,1], 'tickcolor': color(decision)},
-        'bar': {'color': color(decision)},
-        'steps': [
-            {'range': [0,0.48], 'color': 'lightgreen'},
-            {'range': [0.48,1], 'color': 'lightcoral'}],
-        'threshold': {
-            'line': {'color': "black", 'width': 5},
-            'thickness': 1,
-            'value': 0.48}}))
+	value = prediction["pred"].iloc[0],
+	number = {'font':{'size':48}},
+	domain = {'x': [0, 1], 'y': [0, 1]},
+	title = {'text': decision, 'font': {'size': 28, 'color':color(decision)}},
+	delta = {'reference': 0.48, 'increasing': {'color': "red"},'decreasing':{'color':'green'}},
+	gauge = {
+		'axis': {'range': [0,1], 'tickcolor': color(decision)},
+		'bar': {'color': color(decision)},
+		'steps': [
+			{'range': [0,0.48], 'color': 'lightgreen'},
+			{'range': [0.48,1], 'color': 'lightcoral'}],
+		'threshold': {
+			'line': {'color': "black", 'width': 5},
+			'thickness': 1,
+			'value': 0.48}}))
 
 	fig.update_layout(height=500, width=1200)
 
