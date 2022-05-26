@@ -11,7 +11,6 @@ import shap
 # import streamlit.components.v1 as components
 
 shap.initjs()
-st.set_page_config(layout="wide")
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
 ########################################################
@@ -79,7 +78,7 @@ def load_data():
 	df = pd.read_csv("./dashboard_data/df_train.csv")
 	df_test = pd.read_csv("./dashboard_data/df_test.csv")
 	df_test_cat_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
-	df_test_num_features = pd.read_csv("./dashboard_data/df_test_cat_features.csv")
+	df_test_num_features = pd.read_csv("./dashboard_data/df_test_num_features.csv")
  
 	return df, df_test, df_test_cat_features, df_test_num_features
 
@@ -299,6 +298,7 @@ def app():
 #-------------------------------------------------------
 
 	df, df_test, df_test_cat_features, df_test_num_features = load_data()
+	df = transform_df(df)
 
 #Client Infos
 #-------------------------------------------------------
@@ -380,7 +380,6 @@ def app():
 	prediction.rename(columns={"pred": "TARGET"})
 	
 	#concatenate training set and prediction row
-	df = transform_df(df)
 	frames = [prediction, df]
 	df = pd.concat(frames)
 	
