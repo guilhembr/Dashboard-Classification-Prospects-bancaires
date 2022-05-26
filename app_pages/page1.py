@@ -15,7 +15,7 @@ st.set_page_config(layout="wide")
 def app():
     """Fonction générant la page 1 du dashboard. Ne prend pas de paramètre en entrée.
     """
-    logo = imread("./app_pages/logo.png")
+    logo = imread("./app_pages/logo.jpeg")
 
     st.sidebar.image(logo)
     st.sidebar.write("")
