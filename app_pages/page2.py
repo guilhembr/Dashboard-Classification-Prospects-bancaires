@@ -373,6 +373,11 @@ def app():
 	log_reg_explainer = shap_footing(ohe_dataframe)
 	plot_shap_waterfall(client_id, ohe_dataframe_test, log_reg_explainer, features_list_after_prepr_test)
  
+#Display Client Dataframe
+#-------------------------------------------------------
+	st.subheader("Données client")
+	st.dataframe(prediction)
+
 #Comparaison with Training population
 #-------------------------------------------------------
 
